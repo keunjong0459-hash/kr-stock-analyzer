@@ -88,7 +88,10 @@ quant = quant_total(tech["df"], fund)
 macro = judge_macro(macro_bundle)
 expect = analyze_expectation(news, discs)
 strategy = build_strategy(tech, quant, macro, expect)
-report_md = build_report(company, tech, quant, macro, expect, fund, strategy)
+try:
+    report_md = build_report(company, tech, quant, macro, expect, fund, strategy)
+except TypeError:
+    report_md = build_report(company, tech, quant, macro, expect, fund)
 
 # ---------- 상단 요약 카드 ----------
 c1, c2, c3, c4 = st.columns(4)
