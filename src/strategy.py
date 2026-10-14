@@ -88,9 +88,9 @@ def price_levels(tech: dict) -> dict:
         t1 = round(reg["high"])
         t2 = round(max(high10, reg["high"]))
         if close > t1:
-            t1why = "breakout"
+            t1why = "뚫고 올라온 자리예요. 떨어지면 여기서 받쳐줄 수 있습니다."
             t2 = round(close + atr_won)
-            why2 = "next"
+            why2 = "한 뼘 위를 다음 목표로 봅니다. 욕심내지 말고 나눠 파세요."
         elif t2 <= t1:
             t2 = round(t1 * 1.03)
             why2 = f"터진 날 고점({t1:,.0f}원)을 뚫고 더 오르면 노리는 가격이에요."
