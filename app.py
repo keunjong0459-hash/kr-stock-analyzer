@@ -68,9 +68,8 @@ st.subheader(f"{company['Name']} ({company['Code']}) · {company['Market']}")
 with st.spinner("주가·지수·뉴스 수집 중..."):
     try:
         price = get_price(company["Code"], company["Market"], years=years)
-    except Exception as e:
-        st.error(f"주가 조회 실패: {e}")
-        st.stop()
+    except Exception:
+        price = None
     macro_bundle = get_macro_bundle()
     fund = get_fundamentals(company["Code"])
     gnews = get_company_news(company["Name"], max_items=20)
@@ -84,16 +83,46 @@ with st.spinner("주가·지수·뉴스 수집 중..."):
     sector = get_sector_info(company["Code"])
     sector_news = get_sector_news(sector["industry"], 8) if sector and sector.get("industry") else []
 
+    intra = None
+    try:
+        _idf = get_intraday(company["Code"], company["Market"])
+        intra = analyze_session(_idf)
+    except Exception:
+        intra = None
+
+    if price is None or len(price) == 0:
+        st.warning("일봉 자료가 없습니다 (오늘 상장 등). 분봉 흐름 중심으로 보여드립니다.")
+        macro_nb = judge_macro(macro_bundle)
+        st.write("### 시장 날씨: " + macro_nb["regime"])
+        for b in macro_nb["bullish"] or ["없음"]:
+            st.write("- 좋은 일: " + b)
+        for b in macro_nb["bearish"] or ["없음"]:
+            st.write("- 나쁜 일: " + b)
+        expect_nb = analyze_expectation(news, discs)
+        st.write("### 회사 소식: " + expect_nb["label"])
+        for n in expect_nb["all_news"][:10]:
+            if n.get("link"):
+                st.markdown("- [" + n["title"] + "](" + n["link"] + ")")
+            else:
+                st.write("- " + n["title"])
+        if intra:
+            with st.expander("오늘 장 흐름 (5분봉)", expanded=True):
+                for line in intra.get("lines", []):
+                    st.write("- " + line)
+                st.write("**한 줄 판단: " + intra.get("verdict", "") + "**")
+        else:
+            st.info("분봉 자료도 없습니다. 내일 다시 실행해 보세요.")
+        st.stop()
+
+    bars = len(price)
+    if bars < 60:
+        st.warning("일봉이 " + str(bars) + "개뿐입니다 (자료 부족). 일봉 분석은 참고만 하시고 분봉 흐름을 중심으로 보세요.")
+
 tech = analyze_technicals(price)
 quant = quant_total(tech["df"], fund)
 macro = judge_macro(macro_bundle)
 expect = analyze_expectation(news, discs)
 strategy = build_strategy(tech, quant, macro, expect)
-try:
-    _idf = get_intraday(company["Code"], company["Market"])
-    intra = analyze_session(_idf)
-except Exception:
-    intra = None
 if intra:
     strategy = build_strategy(tech, quant, macro, expect, intra)
 try:
