@@ -120,5 +120,5 @@ def analyze_session(df: pd.DataFrame) -> dict | None:
         "date": datestr, "open": o, "high": h, "low": l, "close": c,
         "gap": round(gap, 2), "day_chg": round(day_chg, 2), "pos": round(pos, 1),
         "above_vwap": bool(above_vwap), "session_score": int(score),
-        "lines": lines, "verdict": verdict, "frame": sess[["close"]].copy(),
+        "lines": lines, "verdict": verdict, "frame": sess[["open", "high", "low", "close"]].copy(),
     }
