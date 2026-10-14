@@ -69,7 +69,7 @@ def get_price(code: str, market: str = "", years: int = PRICE_YEARS) -> pd.DataF
         end = datetime.now()
         start = end - timedelta(days=int(years * 365) + 30)
         df = fdr.DataReader(code, start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
-        if df is not None and len(df) > 30:
+        if df is not None and len(df) > 0:
             return _normalize_ohlcv(df)
         errors.append("fdr: 데이터 부족")
     except Exception as e:  # noqa: BLE001
@@ -90,7 +90,7 @@ def get_price(code: str, market: str = "", years: int = PRICE_YEARS) -> pd.DataF
                     code + sfx, period=f"{years}y", interval="1d",
                     auto_adjust=False, progress=False, threads=False,
                 )
-                if df is not None and len(df) > 30:
+                if df is not None and len(df) > 0:
                     return _normalize_ohlcv(df)
             except Exception as e:  # noqa: BLE001
                 errors.append(f"yfinance{sfx}: {e}")
@@ -103,7 +103,7 @@ def get_price(code: str, market: str = "", years: int = PRICE_YEARS) -> pd.DataF
         r = requests.get(url, headers=UA, timeout=15)
         if r.ok and "Date" in r.text[:200]:
             df = pd.read_csv(io.StringIO(r.text), parse_dates=["Date"], index_col="Date")
-            if len(df) > 30:
+            if len(df) > 0:
                 return _normalize_ohlcv(df)
         errors.append("stooq: 데이터 부족")
     except Exception as e:  # noqa: BLE001
@@ -121,7 +121,7 @@ def get_index(symbol: str, years: int = 2) -> pd.DataFrame:
 
         df = yf.download(symbol, period=f"{years}y", interval="1d",
                          auto_adjust=False, progress=False, threads=False)
-        if df is not None and len(df) > 30:
+        if df is not None and len(df) > 0:
             df = _flatten_columns(df)
             df = df.loc[:, ~df.columns.duplicated()]
             if "adj close" in df.columns and "close" not in df.columns:
@@ -139,7 +139,7 @@ def get_index(symbol: str, years: int = 2) -> pd.DataFrame:
         end = datetime.now()
         start = end - timedelta(days=years * 365 + 30)
         df = fdr.DataReader(alt, start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
-        if df is not None and len(df) > 30:
+        if df is not None and len(df) > 0:
             return _normalize_ohlcv(df) if "volume" in [c.lower() for c in df.columns] else df
         errors.append("fdr: 부족")
     except Exception as e:  # noqa: BLE001
