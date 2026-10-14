@@ -102,13 +102,22 @@ tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_theme, tab_raw = st.tabs(
 with tab_all:
     st.markdown(report_md)
     st.download_button("리포트 다운로드 (.md)", report_md, file_name=f"{company['Name']}_분석.md")
+    if easy_mode:
+        with st.expander("어려운 용어 쉽게 보기"):
+            for k, v in GLOSSARY.items():
+                st.write(f"- **{k}**: {v}")
 
 with tab_tech:
     st.write("#### 신호 목록")
     sig_df = pd.DataFrame(tech["signals"])
     emoji = {1: "▲", -1: "▼", 0: "■"}
     sig_df["방향"] = sig_df["direction"].map(emoji)
-    st.dataframe(sig_df[["방향", "name", "desc"]].rename(columns={"name": "신호", "desc": "설명"}),
+    if easy_mode:
+        sig_df["쉬운 설명"] = sig_df["name"].map(lambda x: SIGNAL_EASY.get(x, ""))
+        show_cols = ["방향", "name", "desc", "쉬운 설명"]
+    else:
+        show_cols = ["방향", "name", "desc"]
+    st.dataframe(sig_df[show_cols].rename(columns={"name": "신호", "desc": "설명"}),
                  use_container_width=True, hide_index=True)
     st.write("#### 가격 차트 (일봉 + MA + 볼린저 + 거래량)")
     try:
@@ -142,6 +151,12 @@ with tab_quant:
     qp = pd.DataFrame([{"항목": k, "점수": v} for k, v in quant["parts"].items()])
     st.bar_chart(qp.set_index("항목"))
     st.json(quant["details"])
+    if easy_mode:
+        with st.expander("쉽게 보기", expanded=True):
+            for k, v in quant["parts"].items():
+                label, desc = QUANT_EASY.get(k, (k, ""))
+                st.write(f"- **{label}**({k}): {v}점")
+            st.write("등급 설명: " + GRADE_EASY.get(quant["grade"], ""))
     st.caption("가중치: " + ", ".join(f"{k} {v*100:.0f}%" for k, v in quant["weights"].items()))
 
 with tab_macro:
@@ -178,6 +193,8 @@ with tab_macro:
 
 with tab_news:
     st.write(f"### 기대감: {expect['label']} ({expect['score']}점)")
+    if not expect["counts"]["total"]:
+        st.warning("뉴스를 가져오지 못했습니다. 해외 서버에서는 네이버 뉴스가 차단될 수 있어 Google 뉴스로 보완 중입니다.")
     st.write(f"뉴스 {expect['counts']['total']}건 · 긍정 {expect['counts']['pos']} · 부정 {expect['counts']['neg']} · 중립 {expect['counts']['neu']}")
     if expect["top_keywords"]:
         st.write("핵심 키워드: " + ", ".join(f"{k['word']}({k['count']})" for k in expect["top_keywords"][:10]))
@@ -192,6 +209,22 @@ with tab_news:
         st.write("#### 주목 공시")
         for dc in expect["watch_disclosures"]:
             st.write(f"- {dc['title']} ({dc.get('date','')})")
+
+with tab_theme:
+    st.write("### 산업·테마")
+    if sector and (sector.get("industry") or sector.get("sector")):
+        st.write("산업구분: " + sector.get("industry", "-") + " / 업종: " + sector.get("sector", "-"))
+        st.caption(sector.get("note", ""))
+    else:
+        st.info("업종 분류를 찾지 못했습니다.")
+    if expect["top_keywords"]:
+        st.write("테마 힌트: " + ", ".join(k["word"] for k in expect["top_keywords"][:10]))
+    st.write("#### 같은 산업 뉴스")
+    if sector_news:
+        for n in sector_news:
+            st.write("- " + n["title"] + " (" + n.get("date", "") + ")")
+    else:
+        st.write("같은 산업 뉴스가 없습니다.")
 
 with tab_raw:
     st.write("#### 펀더멘털 (네이버 금융 크롤링)")
