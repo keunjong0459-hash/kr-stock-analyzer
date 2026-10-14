@@ -54,7 +54,7 @@ def _load_bundled_csv() -> pd.DataFrame:
     df["Market"] = df["Market"].astype(str).str.strip().str.upper()
     df = df[df["Code"].str.len().between(5, 6) & df["Name"].ne("")].reset_index(drop=True)
     df = df.drop_duplicates(subset=["Code"]).reset_index(drop=True)
-    if len(df) < 2000:
+    if len(df) < 100:
         raise RuntimeError("bundled listing too small")
     return df
 
@@ -133,12 +133,59 @@ def load_universe() -> pd.DataFrame:
     return BUILTIN_UNIVERSE.copy()
 
 
+_YAHOO_UA = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+}
+
+
+def yahoo_search_fallback(query: str):
+    q = (query or "").strip()
+    if not q:
+        return None
+    try:
+        import requests
+
+        r = requests.get(
+            "https://query1.finance.yahoo.com/v1/finance/search",
+            params={"q": q, "quotesCount": 10, "country": "South Korea", "lang": "ko"},
+            headers=_YAHOO_UA,
+            timeout=8,
+        )
+        r.raise_for_status()
+        quotes = (r.json().get("quotes", []) or [])
+    except Exception:
+        return None
+    for item in quotes:
+        try:
+            sym = str(item.get("symbol", ""))
+            if sym.endswith(".KS"):
+                code, mkt = sym[:-3], "KOSPI"
+            elif sym.endswith(".KQ"):
+                code, mkt = sym[:-3], "KOSDAQ"
+            else:
+                continue
+            if not code:
+                continue
+            name = str(item.get("longname") or item.get("shortname") or q).strip()
+            return {"Code": code, "Name": name or q, "Market": mkt}
+        except Exception:
+            continue
+    return None
+
 def resolve_company(query: str, universe: pd.DataFrame) -> dict | None:
     """기업명(부분 일치/유사도)으로 종목 찾기. {'Code','Name','Market'} 반환."""
     q = (query or "").strip()
     if not q:
         return None
     q_nospace = q.replace(" ", "").lower()
+
+    # 0) 종목코드 직접 입력 (숫자 5~6자리)
+    if q_nospace.isdigit() and len(q_nospace) in (5, 6):
+        m = universe[universe["Code"] == q_nospace.zfill(6)]
+        if len(m):
+            r = m.iloc[0]
+            return {"Code": r["Code"], "Name": r["Name"], "Market": r["Market"]}
 
     # 1) 정확 일치
     m = universe[universe["Name"].str.replace(" ", "").str.lower() == q_nospace]
@@ -157,6 +204,10 @@ def resolve_company(query: str, universe: pd.DataFrame) -> dict | None:
     if best:
         r = universe[universe["Name"] == best[0]].iloc[0]
         return {"Code": r["Code"], "Name": r["Name"], "Market": r["Market"]}
+    # 4) Yahoo 검색 보완 (ETF, 신규, 별명)
+    y = yahoo_search_fallback(q)
+    if y:
+        return y
     return None
 
 
@@ -164,6 +215,11 @@ def suggest_names(query: str, universe: pd.DataFrame, n: int = 8) -> list[str]:
     q = (query or "").strip().replace(" ", "").lower()
     if not q:
         return universe["Name"].head(n).tolist()
+    if q.replace(" ", "").isdigit():
+        codeq = q.replace(" ", "")
+        hits = universe[universe["Code"].str.startswith(codeq)]["Name"].head(n).tolist()
+        if hits:
+            return hits
     mask = universe["Name"].str.replace(" ", "").str.lower().str.contains(q, na=False)
     hits = universe[mask]["Name"].head(n).tolist()
     if len(hits) >= n:
