@@ -57,7 +57,10 @@ def volume_regime(tech: dict) -> dict:
     win = d.tail(10)
     if "vol_ratio" not in win.columns or len(win) < 5:
         return {"surge": False}
-    idx = win["vol_ratio"].idxmax()
+    vr_col = win["vol_ratio"].dropna()
+    if len(vr_col) == 0:
+        return {"surge": False}
+    idx = vr_col.idxmax()
     row = win.loc[idx]
     vr = float(row["vol_ratio"]) if pd.notna(row["vol_ratio"]) else 1.0
     if vr < 2.0:
