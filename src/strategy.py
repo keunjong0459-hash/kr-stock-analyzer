@@ -103,21 +103,21 @@ def price_levels(tech: dict) -> dict:
         else:
             t1why = "터진 날 고점이 1차 목표예요. 여기를 뚫으면 더 갑니다."
             why2 = "최근 10일 가장 비쌌던 가격이에요. 여기 오면 나머지도 파세요."
-        buy_why = "기본 매수 자리입니다."
-        stop_why = "기본 손절 자리입니다."
+        buy_why = f"거래가 터진 날의 가장 쌌던 가격 근처예요. 여기로 밀리면 단기로 사는 자리입니다."
+        stop_why = "터진 날 저점 밑으로 떨어지면 단기 실패이니 바로 파세요."
         if close <= t1:
             stop = round(min(reg["low"], low10) * 0.98)
         return {
             "mode": "단기",
             "mode_why": f"거래량이 평소의 {reg['vr']}배로 터져 단기 기준으로 잡았습니다.",
             "buy_zone": buy,
-            "buy_why": f"거래가 터진 날({sdate})의 가장 쌌던 가격 근처예요. 여기로 밀리면 단기로 사는 자리입니다.",
+            "buy_why": buy_why,
             "target1": t1,
             "target1_why": t1why,
             "target2": t2,
             "target2_why": why2,
             "stop": stop,
-            "stop_why": "터진 날 저점 밑으로 떨어지면 단기 실패이니 바로 파세요.",
+            "stop_why": stop_why,
         }
     ma20 = float(last.get("ma20")) if pd.notna(last.get("ma20")) else None
     ma60 = float(last.get("ma60")) if pd.notna(last.get("ma60")) else None
