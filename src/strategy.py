@@ -174,7 +174,7 @@ def price_levels(tech: dict) -> dict:
 
 
 def decide_action(total: float, acc_score: float, close: float = 0, target1: float = 0, rsi: float = 50) -> tuple[str, str]:
-    if close and target1 and close >= target1:
+    if close and target1 and close > target1:
         return ("지금 사면 늦었어요", "새로 사지 마세요. 갖고 있으면 절반 팔고 눌리면 다시 사세요.")
     if rsi >= 75:
         return ("너무 뜨거워진 자리예요", "새로 사지 말고 눌릴 때까지 기다리세요.")
@@ -203,7 +203,7 @@ def adjust_for_session(action, action_easy, intra, px):
     s = int(intra.get("session_score", 0))
     close = float(intra.get("close") or 0)
     t1 = float(px.get("target1") or 0)
-    if close and t1 and close >= t1:
+    if close and t1 and close > t1:
         if s < 0:
             return ("올랐지만 오늘 힘이 빠졌어요", "내일 시초에 절반 팔고 나머지는 손절가까지 들고 가세요.")
         return ("뚫고 기세 좋게 마감했어요", "들고 가되 손절가를 터진 날 저점으로 올리세요. 새로 사지는 마세요.")
