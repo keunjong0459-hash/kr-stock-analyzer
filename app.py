@@ -182,6 +182,26 @@ with tab_tech:
         st.line_chart(tech["df"]["close"].tail(250))
     sr = tech["support_resistance"]
     st.info(f"최근 60일 고점 {sr['recent_high']:,.0f}원({sr['high_date']}) · 저점 {sr['recent_low']:,.0f}원({sr['low_date']})")
+    st.write("#### 세력 매집 현황 (차트로 보기)")
+    _acc = strategy["accumulation"]
+    st.metric("매집 판단", _acc["label"], str(_acc["score"]) + "점")
+    st.progress(min(max(float(_acc["score"]) / 100, 0.0), 1.0))
+    for _r in _acc["reasons"]:
+        st.write("- " + _r)
+    try:
+        import plotly.graph_objects as go
+        _dd = tech["df"].tail(60)
+        _fig3 = go.Figure()
+        _fig3.add_trace(go.Scatter(x=_dd.index, y=_dd["obv"], name="OBV", line=dict(color="purple")))
+        _fig3.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), title="OBV가 오르면 모으는 중")
+        st.plotly_chart(_fig3, use_container_width=True)
+        _fig4 = go.Figure()
+        _fig4.add_trace(go.Bar(x=_dd.index, y=_dd["volume"], name="거래량"))
+        _fig4.add_trace(go.Scatter(x=_dd.index, y=_dd["vol_ma20"], name="20일 평균", line=dict(color="orange")))
+        _fig4.update_layout(height=220, margin=dict(l=10, r=10, t=30, b=10), title="거래량과 평소 평균")
+        st.plotly_chart(_fig4, use_container_width=True)
+    except Exception as _e:
+        st.warning("차트 실패: " + str(_e))
 
 with tab_quant:
     st.write(f"### 종합 {quant['total']}점 · {quant['grade']}등급 · 상승여력 {quant['upside']} (참고확률 {quant['up_prob']}%)")
@@ -263,26 +283,6 @@ with tab_theme:
     else:
         st.write("같은 산업 뉴스가 없습니다.")
 
-    st.write("#### 세력 매집 현황 (차트로 보기)")
-    _acc = strategy["accumulation"]
-    st.metric("매집 판단", _acc["label"], str(_acc["score"]) + "점")
-    st.progress(min(max(float(_acc["score"]) / 100, 0.0), 1.0))
-    for _r in _acc["reasons"]:
-        st.write("- " + _r)
-    try:
-        import plotly.graph_objects as go
-        _dd = tech["df"].tail(60)
-        _fig3 = go.Figure()
-        _fig3.add_trace(go.Scatter(x=_dd.index, y=_dd["obv"], name="OBV", line=dict(color="purple")))
-        _fig3.update_layout(height=260, margin=dict(l=10, r=10, t=30, b=10), title="OBV가 오르면 모으는 중")
-        st.plotly_chart(_fig3, use_container_width=True)
-        _fig4 = go.Figure()
-        _fig4.add_trace(go.Bar(x=_dd.index, y=_dd["volume"], name="거래량"))
-        _fig4.add_trace(go.Scatter(x=_dd.index, y=_dd["vol_ma20"], name="20일 평균", line=dict(color="orange")))
-        _fig4.update_layout(height=220, margin=dict(l=10, r=10, t=30, b=10), title="거래량과 평소 평균")
-        st.plotly_chart(_fig4, use_container_width=True)
-    except Exception as _e:
-        st.warning("차트 실패: " + str(_e))
 
 with tab_raw:
     st.write("#### 펀더멘털 (네이버 금융 크롤링)")
