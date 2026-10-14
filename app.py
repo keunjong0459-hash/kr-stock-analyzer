@@ -18,6 +18,9 @@ from src.quant import quant_total  # noqa: E402
 from src.market import judge_macro  # noqa: E402
 from src.sentiment import analyze_expectation  # noqa: E402
 from src.report import build_report  # noqa: E402
+from src.news import get_company_news, get_sector_news  # noqa: E402
+from src.sector import get_sector_info  # noqa: E402
+from src.explain import GLOSSARY, SIGNAL_EASY, QUANT_EASY, GRADE_EASY  # noqa: E402
 
 st.set_page_config(page_title="한국 주식 종합 분석", page_icon="📈", layout="wide")
 st.title("📈 한국 주식 종합 분석 — 기술적 + 퀀트 + 지수/매크로 + 기업 기대감")
@@ -44,6 +47,8 @@ with st.sidebar:
     years = st.slider("차트 기간(년)", 1, 3, 2)
     news_pages = st.slider("뉴스 수집 페이지", 1, 5, 2)
     go = st.button("분석 실행", type="primary", use_container_width=True)
+    easy_mode = st.checkbox("초보자 쉬운 설명 보기", value=True)
+    st.caption("종목 DB " + str(len(universe)) + "개")
 
 if not go:
     st.info("왼쪽에서 기업명을 입력하고 **분석 실행**을 눌러주세요.")
@@ -66,8 +71,16 @@ with st.spinner("주가·지수·뉴스 수집 중..."):
         st.stop()
     macro_bundle = get_macro_bundle()
     fund = get_fundamentals(company["Code"])
-    news = get_naver_news(company["Code"], pages=news_pages)
+    gnews = get_company_news(company["Name"], max_items=20)
+    nnews = get_naver_news(company["Code"], pages=news_pages)
+    seen_titles, news = set(), []
+    for n in gnews + nnews:
+        if n["title"] not in seen_titles:
+            seen_titles.add(n["title"])
+            news.append(n)
     discs = get_dart_disclosures(company["Code"])
+    sector = get_sector_info(company["Code"])
+    sector_news = get_sector_news(sector["industry"], 8) if sector and sector.get("industry") else []
 
 tech = analyze_technicals(price)
 quant = quant_total(tech["df"], fund)
@@ -82,8 +95,8 @@ c2.metric("기술적 흐름", tech["trend"], f"신호 {tech['signal_score']:+d}"
 c3.metric("퀀트 종합", f"{quant['total']}점 · {quant['grade']}", quant["upside"])
 c4.metric("시장 국면", macro["regime"], f"기대감 {expect['label']}")
 
-tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_raw = st.tabs(
-    ["종합 리포트", "기술적 분석", "퀀트 점수", "지수·매크로", "기업 기대감", "원본 데이터"]
+tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_theme, tab_raw = st.tabs(
+    ["종합 리포트", "기술적 분석", "퀀트 점수", "지수·매크로", "기업 기대감", "산업·테마", "원본 데이터"]
 )
 
 with tab_all:
