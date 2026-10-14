@@ -49,7 +49,7 @@ def build_report(company: dict, tech: dict, quant: dict, macro: dict,
     L.append("## 살 가격·팔 가격·손절 가격 (왜 이 가격인가요?)")
     L.append(f"- 기준: **{px['mode']}**")
     L.append(f"- 살 가격 {px['buy_zone']:,.0f}원 아래: {px['buy_why']}")
-    L.append(f"- 공격적으로 살 가격 {px['buy_agg']:,.0f}원: {px['buy_agg_why']}")
+    L.append(f"- 공격적으로 살 가격 {px['buy_agg']:,.0f}원 (빠른 손절 {px['stop_agg']:,.0f}원): {px['buy_agg_why']} {px['stop_agg_why']}")
     L.append(f"- 1차 목표 {px['target1']:,.0f}원: {px['target1_why']}")
     L.append(f"- 2차 목표 {px['target2']:,.0f}원: {px['target2_why']}")
     L.append(f"- 손절 {px['stop']:,.0f}원: {px['stop_why']}")
