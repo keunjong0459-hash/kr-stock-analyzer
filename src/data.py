@@ -25,15 +25,30 @@ UA = {
 PRICE_YEARS = 2
 
 
-def _normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+def _flatten_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = [str(c).strip().lower() for c in df.columns]
+    if isinstance(df.columns, pd.MultiIndex):
+        known = {"open", "high", "low", "close", "adj close", "adj_close", "volume"}
+        flat = []
+        for c in df.columns:
+            parts = [str(x).strip().lower() for x in c]
+            hit = next((p for p in parts if p in known), parts[-1])
+            flat.append(hit)
+        df.columns = flat
+    else:
+        df.columns = [str(c).strip().lower() for c in df.columns]
+    return df
+
+
+def _normalize_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
+    df = _flatten_columns(df)
     rename = {
         "open": "open", "high": "high", "low": "low", "close": "close",
         "adj close": "close", "adj_close": "close", "volume": "volume",
         "시가": "open", "고가": "high", "저가": "low", "종가": "close", "거래량": "volume",
     }
     df = df.rename(columns={c: rename.get(c, c) for c in df.columns})
+    df = df.loc[:, ~df.columns.duplicated()]
     for c in ["open", "high", "low", "close", "volume"]:
         if c not in df.columns:
             raise ValueError(f"OHLCV 컬럼 부족: {list(df.columns)}")
@@ -76,8 +91,6 @@ def get_price(code: str, market: str = "", years: int = PRICE_YEARS) -> pd.DataF
                     auto_adjust=False, progress=False, threads=False,
                 )
                 if df is not None and len(df) > 30:
-                    if isinstance(df.columns, pd.MultiIndex):
-                        df.columns = [c[0] for c in df.columns]
                     return _normalize_ohlcv(df)
             except Exception as e:  # noqa: BLE001
                 errors.append(f"yfinance{sfx}: {e}")
@@ -109,9 +122,8 @@ def get_index(symbol: str, years: int = 2) -> pd.DataFrame:
         df = yf.download(symbol, period=f"{years}y", interval="1d",
                          auto_adjust=False, progress=False, threads=False)
         if df is not None and len(df) > 30:
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = [c[0] for c in df.columns]
-            df.columns = [str(c).strip().lower() for c in df.columns]
+            df = _flatten_columns(df)
+            df = df.loc[:, ~df.columns.duplicated()]
             if "adj close" in df.columns and "close" not in df.columns:
                 df = df.rename(columns={"adj close": "close"})
             df.index = pd.to_datetime(df.index)
