@@ -109,10 +109,12 @@ c3.metric("성적표(100점 만점)", f"{quant['total']}점 · {quant['grade']}"
 c4.metric("시장 국면", macro["regime"], f"기대감 {expect['label']}")
 
 st.success("결론: " + strategy["action"] + " — " + strategy["action_easy"] + " [" + strategy["mode"] + " 기준]")
-s1, s2, s3 = st.columns(3)
-s1.metric("살 가격", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
-s2.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
-s3.metric("손절 가격", f"{strategy['prices']['stop']:,.0f}원")
+st.caption("세력 매집: " + strategy["accumulation"]["label"] + " (" + str(strategy["accumulation"]["score"]) + "점)")
+s1, s2, s3, s4 = st.columns(4)
+s1.metric("보수적 매수가", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
+s2.metric("공격적 매수가", f"{strategy['prices']['buy_agg']:,.0f}원")
+s3.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
+s4.metric("손절 가격", f"{strategy['prices']['stop']:,.0f}원")
 if intra:
     with st.expander("오늘 장 흐름 (5분봉)", expanded=True):
         for line in intra.get("lines", []):
