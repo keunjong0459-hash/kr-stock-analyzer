@@ -38,6 +38,13 @@ def build_report(company: dict, tech: dict, quant: dict, macro: dict,
     for r in acc["reasons"]:
         L.append(f"  - {r}")
     L.append("")
+    intra = strategy.get("intra")
+    if intra:
+        L.append("## 오늘 장 흐름 (5분봉으로 본 하루)")
+        for line in intra.get("lines", []):
+            L.append("- " + line)
+        L.append("- 한 줄 판단: " + intra.get("verdict", ""))
+        L.append("")
     L.append("## 살 가격·팔 가격·손절 가격 (왜 이 가격인가요?)")
     L.append(f"- 기준: **{px['mode']}**")
     L.append(f"- 살 가격 {px['buy_zone']:,.0f}원 아래: {px['buy_why']}")
