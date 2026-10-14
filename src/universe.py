@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import difflib
 import time
+from pathlib import Path
 
 import pandas as pd
 
@@ -44,6 +45,20 @@ _NAVER_UA = {
 }
 
 
+def _load_bundled_csv() -> pd.DataFrame:
+    here = Path(__file__).resolve().parent.parent / "data" / "krx_listing.csv"
+    df = pd.read_csv(here, encoding="utf-8-sig", dtype=str)
+    df = df.rename(columns={c: c.strip() for c in df.columns})
+    df["Code"] = df["Code"].astype(str).str.strip()
+    df["Name"] = df["Name"].astype(str).str.strip()
+    df["Market"] = df["Market"].astype(str).str.strip().str.upper()
+    df = df[df["Code"].str.len().between(5, 6) & df["Name"].ne("")].reset_index(drop=True)
+    df = df.drop_duplicates(subset=["Code"]).reset_index(drop=True)
+    if len(df) < 2000:
+        raise RuntimeError("bundled listing too small")
+    return df
+
+
 def _load_naver_universe(pages_per_market: int = 60, pause: float = 0.15) -> pd.DataFrame:
     """네이버 금융 시가총액 페이지를 순회해 전체 상장 목록 수집."""
     import requests
@@ -57,7 +72,7 @@ def _load_naver_universe(pages_per_market: int = 60, pause: float = 0.15) -> pd.
                 f"?sosok={sosok}&page={page}"
             )
             try:
-                r = requests.get(url, headers=_NAVER_UA, timeout=12)
+                r = requests.get(url, headers=_NAVER_UA, timeout=6)
                 r.raise_for_status()
             except Exception:
                 break
@@ -83,6 +98,11 @@ def _load_naver_universe(pages_per_market: int = 60, pause: float = 0.15) -> pd.
 
 def load_universe() -> pd.DataFrame:
     """KRX 전체 종목 목록 반환. 실패하면 내장 목록."""
+
+    try:
+        return _load_bundled_csv()
+    except Exception:
+        pass
     # 1) FinanceDataReader (로컬 등 설치된 환경)
     try:
         import FinanceDataReader as fdr
