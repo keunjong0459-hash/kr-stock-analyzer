@@ -98,6 +98,8 @@ def price_levels(tech: dict) -> dict:
             stop_why = "뚫고 올라온 자리(터진 날 고점)를 깨면 실패이니 파세요."
             buy_agg = round(close)
             buy_agg_why = "이미 오른 자리에서 따라붙는 가격이라 위험이 큽니다. 소액만 하세요."
+            stop_agg = round(close * 0.98)
+            stop_agg_why = "오늘 산 가격에서 2%만 빠져도 파세요."
         elif t2 <= t1:
             t1why = "터진 날 고점이 1차 목표예요. 여기를 뚫으면 더 갑니다."
             t2 = round(t1 * 1.03)
@@ -109,6 +111,8 @@ def price_levels(tech: dict) -> dict:
         stop_why = "터진 날 저점 밑으로 떨어지면 단기 실패이니 바로 파세요."
         buy_agg = round(reg["close"])
         buy_agg_why = "불이 붙은 자리에서 따라사는 가격이에요. 돈의 절반 이하만 쓰세요."
+        stop_agg = round(reg["close"] * 0.97)
+        stop_agg_why = "따라붙는 자리는 3%만 밀려도 바로 파세요."
         if close <= t1:
             stop = round(min(reg["low"], low10) * 0.98)
         return {
@@ -118,6 +122,8 @@ def price_levels(tech: dict) -> dict:
             "buy_why": buy_why,
             "buy_agg": buy_agg,
             "buy_agg_why": buy_agg_why,
+            "stop_agg": stop_agg,
+            "stop_agg_why": stop_agg_why,
             "target1": t1,
             "target1_why": t1why,
             "target2": t2,
@@ -156,6 +162,8 @@ def price_levels(tech: dict) -> dict:
         "buy_why": "평균선 근처라 쌀 때 사는 자리입니다. 이 가격 아래로 내려오면 2~3번 나눠 사세요.",
         "buy_agg": round(ma5) if ma5 else round(close),
         "buy_agg_why": "단기 평균선 자리에서 바로 사는 공격 가격이에요. 떨어지면 바로 파세요.",
+        "stop_agg": round((ma5 if ma5 else close) * 0.97),
+        "stop_agg_why": "공격 매수는 3% 룰. 미련 두지 말고 파세요.",
         "target1": target1,
         "target1_why": f"최근 60일 가장 비쌌던 가격이라 여기서 막힐 수 있어요. 절반은 여기서 파세요.",
         "target2": target2,
