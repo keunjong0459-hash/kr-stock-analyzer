@@ -100,7 +100,7 @@ c2.metric("기술적 흐름", tech["trend"], f"신호 {tech['signal_score']:+d}"
 c3.metric("성적표(100점 만점)", f"{quant['total']}점 · {quant['grade']}", quant["upside"])
 c4.metric("시장 국면", macro["regime"], f"기대감 {expect['label']}")
 
-st.success("결론: " + strategy["action"] + " — " + strategy["action_easy"])
+st.success("결론: " + strategy["action"] + " — " + strategy["action_easy"] + " [" + strategy["mode"] + " 기준]")
 s1, s2, s3 = st.columns(3)
 s1.metric("살 가격", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
 s2.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
