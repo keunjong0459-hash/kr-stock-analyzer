@@ -118,8 +118,17 @@ if intra:
         for line in intra.get("lines", []):
             st.write("- " + line)
         st.write("**한 줄 판단: " + intra.get("verdict", "") + "**")
-        if intra.get("frame") is not None:
-            st.line_chart(intra["frame"])
+        try:
+            import plotly.graph_objects as go
+            f = intra["frame"]
+            lo = float(f["low"].min())
+            hi = float(f["high"].max())
+            pad = max((hi - lo) * 0.1, hi * 0.001)
+            fig = go.Figure(data=[go.Candlestick(x=f.index, open=f["open"], high=f["high"], low=f["low"], close=f["close"], name="5분봉")])
+            fig.update_layout(height=380, xaxis_rangeslider_visible=False, yaxis=dict(range=[lo - pad, hi + pad]), margin=dict(l=10, r=10, t=30, b=10))
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception:
+            st.line_chart(intra["frame"][["close"]])
 
 tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_theme, tab_raw = st.tabs(
     ["종합 리포트", "기술적 분석", "퀀트 점수", "지수·매크로", "기업 기대감", "산업·테마", "원본 데이터"]
