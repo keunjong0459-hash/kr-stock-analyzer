@@ -18,6 +18,7 @@ from src.quant import quant_total  # noqa: E402
 from src.market import judge_macro  # noqa: E402
 from src.sentiment import analyze_expectation  # noqa: E402
 from src.report import build_report  # noqa: E402
+from src.strategy import build_strategy  # noqa: E402
 from src.news import get_company_news, get_sector_news  # noqa: E402
 from src.sector import get_sector_info  # noqa: E402
 from src.explain import GLOSSARY, SIGNAL_EASY, QUANT_EASY, GRADE_EASY  # noqa: E402
@@ -86,14 +87,21 @@ tech = analyze_technicals(price)
 quant = quant_total(tech["df"], fund)
 macro = judge_macro(macro_bundle)
 expect = analyze_expectation(news, discs)
-report_md = build_report(company, tech, quant, macro, expect, fund)
+strategy = build_strategy(tech, quant, macro, expect)
+report_md = build_report(company, tech, quant, macro, expect, fund, strategy)
 
 # ---------- 상단 요약 카드 ----------
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("현재가", f"{tech['last_close']:,.0f}원", f"RSI {tech['rsi']:.1f}")
 c2.metric("기술적 흐름", tech["trend"], f"신호 {tech['signal_score']:+d}")
-c3.metric("퀀트 종합", f"{quant['total']}점 · {quant['grade']}", quant["upside"])
+c3.metric("성적표(100점 만점)", f"{quant['total']}점 · {quant['grade']}", quant["upside"])
 c4.metric("시장 국면", macro["regime"], f"기대감 {expect['label']}")
+
+st.success("결론: " + strategy["action"] + " — " + strategy["action_easy"])
+s1, s2, s3 = st.columns(3)
+s1.metric("살 가격", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
+s2.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
+s3.metric("손절 가격", f"{strategy['prices']['stop']:,.0f}원")
 
 tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_theme, tab_raw = st.tabs(
     ["종합 리포트", "기술적 분석", "퀀트 점수", "지수·매크로", "기업 기대감", "산업·테마", "원본 데이터"]
