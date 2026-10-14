@@ -112,7 +112,7 @@ st.success("결론: " + strategy["action"] + " — " + strategy["action_easy"] +
 st.caption("세력 매집: " + strategy["accumulation"]["label"] + " (" + str(strategy["accumulation"]["score"]) + "점)")
 s1, s2, s3, s4 = st.columns(4)
 s1.metric("보수적 매수가", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
-s2.metric("공격적 매수가", f"{strategy['prices']['buy_agg']:,.0f}원")
+s2.metric("공격적 매수가", f"{strategy['prices']['buy_agg']:,.0f}원", "손절 " + f"{strategy['prices']['stop_agg']:,.0f}원")
 s3.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
 s4.metric("손절 가격", f"{strategy['prices']['stop']:,.0f}원")
 if intra:
