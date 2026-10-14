@@ -19,6 +19,7 @@ from src.market import judge_macro  # noqa: E402
 from src.sentiment import analyze_expectation  # noqa: E402
 from src.report import build_report  # noqa: E402
 from src.strategy import build_strategy  # noqa: E402
+from src.intraday import get_intraday, analyze_session  # noqa: E402
 from src.news import get_company_news, get_sector_news  # noqa: E402
 from src.sector import get_sector_info  # noqa: E402
 from src.explain import GLOSSARY, SIGNAL_EASY, QUANT_EASY, GRADE_EASY  # noqa: E402
@@ -89,6 +90,13 @@ macro = judge_macro(macro_bundle)
 expect = analyze_expectation(news, discs)
 strategy = build_strategy(tech, quant, macro, expect)
 try:
+    _idf = get_intraday(company["Code"], company["Market"])
+    intra = analyze_session(_idf)
+except Exception:
+    intra = None
+if intra:
+    strategy = build_strategy(tech, quant, macro, expect, intra)
+try:
     report_md = build_report(company, tech, quant, macro, expect, fund, strategy)
 except TypeError:
     report_md = build_report(company, tech, quant, macro, expect, fund)
@@ -105,6 +113,13 @@ s1, s2, s3 = st.columns(3)
 s1.metric("살 가격", f"{strategy['prices']['buy_zone']:,.0f}원 아래")
 s2.metric("파는 목표", f"{strategy['prices']['target1']:,.0f}원")
 s3.metric("손절 가격", f"{strategy['prices']['stop']:,.0f}원")
+if intra:
+    with st.expander("오늘 장 흐름 (5분봉)", expanded=True):
+        for line in intra.get("lines", []):
+            st.write("- " + line)
+        st.write("**한 줄 판단: " + intra.get("verdict", "") + "**")
+        if intra.get("frame") is not None:
+            st.line_chart(intra["frame"])
 
 tab_all, tab_tech, tab_quant, tab_macro, tab_news, tab_theme, tab_raw = st.tabs(
     ["종합 리포트", "기술적 분석", "퀀트 점수", "지수·매크로", "기업 기대감", "산업·테마", "원본 데이터"]
