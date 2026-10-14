@@ -172,8 +172,25 @@ def action_guide(total: float) -> str:
     return "쉬세요. 떨어지는 주식을 잡지 마세요."
 
 
-def build_strategy(tech: dict, quant: dict, macro: dict, expect: dict) -> dict:
+def adjust_for_session(action, action_easy, intra, px):
+    s = int(intra.get("session_score", 0))
+    close = float(intra.get("close") or 0)
+    t1 = float(px.get("target1") or 0)
+    if close and t1 and close >= t1:
+        if s < 0:
+            return ("올랐지만 오늘 힘이 빠졌어요", "내일 시초에 절반 팔고 나머지는 손절가까지 들고 가세요.")
+        return ("뚫고 기세 좋게 마감했어요", "들고 가되 손절가를 터진 날 저점으로 올리세요. 새로 사지는 마세요.")
+    if s <= -2:
+        return ("오늘 장이 약했어요", "내일 아침 바로 사지 말고 오전 흐름을 보고 사세요.")
+    if s >= 2 and action.startswith("지금 사도"):
+        return (action, action_easy + " 오늘 마감도 강했으니 눌리면 과감히 사세요.")
+    return (action, action_easy)
+
+
+def build_strategy(tech: dict, quant: dict, macro: dict, expect: dict, intra: dict | None = None) -> dict:
     acc = accumulation_status(tech)
     px = price_levels(tech)
     action, action_easy = decide_action(float(quant["total"]), float(acc["score"]), float(tech["last_close"]), float(px["target1"]), float(tech.get("rsi") or 50))
-    return {"accumulation": acc, "prices": px, "mode": px["mode"], "mode_why": px["mode_why"], "action": action, "action_easy": action_easy}
+    if intra and px.get("mode") == "단기":
+        action, action_easy = adjust_for_session(action, action_easy, intra, px)
+    return {"accumulation": acc, "prices": px, "mode": px["mode"], "mode_why": px["mode_why"], "action": action, "action_easy": action_easy, "intra": intra}
