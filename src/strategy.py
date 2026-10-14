@@ -80,12 +80,18 @@ def price_levels(tech: dict) -> dict:
     reg = volume_regime(tech)
     low10 = float(d["low"].tail(10).min())
     high10 = float(d["high"].tail(10).max())
+    atr_pct_top = float(last.get("atr_pct")) if pd.notna(last.get("atr_pct")) else 2.0
+    atr_won = close * atr_pct_top / 100
     if reg.get("surge"):
         sdate = reg["date"]
         buy = round(min(reg["low"], low10))
         t1 = round(reg["high"])
         t2 = round(max(high10, reg["high"]))
-        if t2 <= t1:
+        if close > t1:
+            t1why = "breakout"
+            t2 = round(close + atr_won)
+            why2 = "next"
+        elif t2 <= t1:
             t2 = round(t1 * 1.03)
             why2 = f"터진 날 고점({t1:,.0f}원)을 뚫고 더 오르면 노리는 가격이에요."
         else:
@@ -97,7 +103,7 @@ def price_levels(tech: dict) -> dict:
             "buy_zone": buy,
             "buy_why": f"거래가 터진 날({sdate})의 가장 쌌던 가격 근처예요. 여기로 밀리면 단기로 사는 자리입니다.",
             "target1": t1,
-            "target1_why": f"거래가 터진 날({sdate})의 가장 비쌌던 가격이에요. 여기를 뚫으면 더 갑니다.",
+            "target1_why": t1why,
             "target2": t2,
             "target2_why": why2,
             "stop": stop,
@@ -140,7 +146,11 @@ def price_levels(tech: dict) -> dict:
     }
 
 
-def decide_action(total: float, acc_score: float) -> tuple[str, str]:
+def decide_action(total: float, acc_score: float, close: float = 0, target1: float = 0, rsi: float = 50) -> tuple[str, str]:
+    if close and target1 and close >= target1:
+        return ("지금 사면 늦었어요", "새로 사지 마세요. 갖고 있으면 절반 팔고 눌리면 다시 사세요.")
+    if rsi >= 75:
+        return ("너무 뜨거워진 자리예요", "새로 사지 말고 눌릴 때까지 기다리세요.")
     if total >= 65 and acc_score >= 50:
         return ("지금 사도 되는 자리예요", "한 번에 다 사지 말고 2~3번에 나눠 사세요.")
     if total >= 55:
@@ -165,5 +175,5 @@ def action_guide(total: float) -> str:
 def build_strategy(tech: dict, quant: dict, macro: dict, expect: dict) -> dict:
     acc = accumulation_status(tech)
     px = price_levels(tech)
-    action, action_easy = decide_action(float(quant["total"]), float(acc["score"]))
+    action, action_easy = decide_action(float(quant["total"]), float(acc["score"]), float(tech["last_close"]), float(px["target1"]), float(tech.get("rsi") or 50))
     return {"accumulation": acc, "prices": px, "mode": px["mode"], "mode_why": px["mode_why"], "action": action, "action_easy": action_easy}
