@@ -96,7 +96,7 @@ def analyze_technicals(df: pd.DataFrame) -> dict:
     """마지막 행 기준 기술적 상태 + 신호 리스트."""
     d = add_indicators(df)
     last = d.iloc[-1]
-    prev = d.iloc[-2]
+    prev = d.iloc[-2] if len(d) > 1 else last
     close = float(last["close"])
 
     def gt(a, b) -> bool:
@@ -116,9 +116,11 @@ def analyze_technicals(df: pd.DataFrame) -> dict:
     else:
         signals.append({"name": "이평선 혼조", "direction": 0, "desc": f"MA20={last.get('ma20', float('nan')):.0f}, MA60={last.get('ma60', float('nan')):.0f}"})
 
-    # 골든/데드크로스 (최근 5일 내 교차)
+    # 골든/데드크로스 (최근 5일 내 교차, 자료가 짧으면 생략)
     cross = None
     for i in range(1, 6):
+        if len(d) < i + 1:
+            continue
         a_now, b_now = d["ma5"].iloc[-i], d["ma20"].iloc[-i]
         a_pr, b_pr = d["ma5"].iloc[-i - 1], d["ma20"].iloc[-i - 1]
         if pd.notna(a_now) and pd.notna(b_now) and pd.notna(a_pr) and pd.notna(b_pr):
@@ -145,7 +147,8 @@ def analyze_technicals(df: pd.DataFrame) -> dict:
         signals.append({"name": "RSI 중립", "direction": 0, "desc": f"RSI {r:.1f}"})
 
     # MACD
-    mh, mh_prev = float(last["macd_hist"]), float(prev["macd_hist"])
+    mh = float(last["macd_hist"]) if pd.notna(last["macd_hist"]) else 0.0
+    mh_prev = float(prev["macd_hist"]) if pd.notna(prev["macd_hist"]) else 0.0
     if mh > 0 and mh_prev <= 0:
         signals.append({"name": "MACD 상향 전환", "direction": 1, "desc": "히스토그램 음→양 전환"})
     elif mh > 0:
