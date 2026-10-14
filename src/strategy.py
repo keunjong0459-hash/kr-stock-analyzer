@@ -92,9 +92,11 @@ def price_levels(tech: dict) -> dict:
             t2 = round(close + atr_won)
             why2 = "한 뼘 위를 다음 목표로 봅니다. 욕심내지 말고 나눠 파세요."
         elif t2 <= t1:
+            t1why = "터진 날 고점이 1차 목표예요. 여기를 뚫으면 더 갑니다."
             t2 = round(t1 * 1.03)
             why2 = f"터진 날 고점({t1:,.0f}원)을 뚫고 더 오르면 노리는 가격이에요."
         else:
+            t1why = "터진 날 고점이 1차 목표예요. 여기를 뚫으면 더 갑니다."
             why2 = "최근 10일 가장 비쌌던 가격이에요. 여기 오면 나머지도 파세요."
         stop = round(min(reg["low"], low10) * 0.98)
         return {
