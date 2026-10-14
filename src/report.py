@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from src.explain import GRADE_EASY, MACRO_EASY
+
 
 def build_report(company: dict, tech: dict, quant: dict, macro: dict, expect: dict, fund: dict) -> str:
     c = tech["last_close"]
@@ -15,6 +17,12 @@ def build_report(company: dict, tech: dict, quant: dict, macro: dict, expect: di
     L.append(f"- 기업 기대감: **{expect['label']} ({expect['score']}점)** — 뉴스 {expect['counts']['total']}건(긍정 {expect['counts']['pos']}/부정 {expect['counts']['neg']})")
     if fund.get("per") or fund.get("pbr"):
         L.append(f"- 밸류: PER {fund.get('per','-')} / PBR {fund.get('pbr','-')} / ROE {fund.get('roe','-')}% / 시총 {fund.get('marketcap','-')}")
+    L.append("")
+    L.append("## 0) 30초 요약 (쉬운 말로)")
+    L.append(f"- 지금 흐름: {tech['trend']} (신호 {tech['signal_score']:+d}점)")
+    L.append(f"- 성적표: {quant['total']}점 {quant['grade']}등급")
+    L.append(f"- 시장 날씨: {macro['regime']}")
+    L.append(f"- 회사 소식: {expect['label']} ({expect['score']}점)")
     L.append("")
     L.append("## 1) 기술적 분석 흐름")
     for s in tech["signals"]:
