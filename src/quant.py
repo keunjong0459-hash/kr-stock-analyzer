@@ -46,6 +46,8 @@ def trend_score(df: pd.DataFrame) -> tuple[float, dict]:
             pts += max(0.0, min(100.0, (ratio + 10) / 20 * 100)) * (w / 100)
         else:
             detail[col] = None
+    if all(v is None for v in detail.values()):
+        return 50.0, detail
     return _safe(pts), detail
 
 
