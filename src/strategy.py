@@ -107,7 +107,7 @@ def price_levels(tech: dict) -> dict:
     ma60 = float(last.get("ma60")) if pd.notna(last.get("ma60")) else None
     low = float(sr["recent_low"])
     high = float(sr["recent_high"])
-    bb_up = float(d.get("bb_up")) if pd.notna(d.get("bb_up")) else None
+    bb_up = float(last.get("bb_up")) if pd.notna(last.get("bb_up")) else None
 
     cands = [x for x in [ma20, ma60] if x]
     buy_zone = min(cands) if cands else close
